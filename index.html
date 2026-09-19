@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ジャグラー 店くらべ</title>
+<meta name="description" content="苫小牧のホールのジャグラーについて、REG・合算の実測がメーカー公表値の設定1〜6のどこに位置するかを店ごとに並べています。">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="top">
+  <h1>ジャグラー 店くらべ <small>苫小牧</small></h1>
+  <p class="lead">実測を公表値の目盛りに置いただけ。右にあるほど設定を使っている可能性が高い。<a href="notes.html">数字の出し方</a></p>
+</header>
+<main id="app">
+  <nav class="seg" id="period" aria-label="期間">
+    <button data-v="day" class="on">日</button>
+    <button data-v="month">月</button>
+    <button data-v="total">累計</button>
+  </nav>
+  <div class="datenav">
+    <button id="prev" aria-label="前へ">◀</button>
+    <span id="range"></span>
+    <button id="next" aria-label="次へ">▶</button>
+  </div>
+  <nav class="seg small" id="split" aria-label="日の種類" hidden>
+    <button data-v="all" class="on">全日</button>
+    <button data-v="special">特定日</button>
+    <button data-v="normal">平常日</button>
+  </nav>
+  <nav class="tabs" id="machines" aria-label="機種"></nav>
+  <p class="legend">● 実測　━ 幅（95%）　▽ <span id="cmpLabel">この店の累計</span>　<a href="notes.html#scale">?</a></p>
+  <section id="rows"></section>
+  <p class="foot">最終更新 <span id="updated"></span> ／ 台ごとの数値は載せていません。<a href="notes.html">注記</a></p>
+</main>
+<script src="app.js"></script>
+</body>
+</html>
