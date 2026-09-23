@@ -82,9 +82,8 @@ function scaleSvg(pt, cmp) {
   }
   if (cmp && cmp.pos != null) s += `<path d="M${xOf(cmp.pos) - 4} 1 l8 0 l-4 7 z" class="cmp"/>`;
   if (pt.pos == null) return s + `<text x="${W / 2}" y="18" class="none">回数が足りません</text></svg>`;
-  const lo = pt.pos_ci[0] == null ? 0.5 : pt.pos_ci[0];
-  const hi = pt.pos_ci[1] == null ? 6.5 : pt.pos_ci[1];
-  s += `<line x1="${xOf(lo)}" y1="15" x2="${xOf(hi)}" y2="15" class="band"/>`;
+  // 幅（95%）は出さない。機種ごとの合計から出した平均なので、設定として見れば
+  // ぶれて当たり前。あくまで目安として点だけ見せる（2026-09-23 アキラさん判断）
   const out = pt.pos < 1 || pt.pos > 6 ? " out" : "";
   s += `<circle cx="${xOf(pt.pos)}" cy="15" r="5" class="dot${out}"/>`;
   return s + "</svg>";
