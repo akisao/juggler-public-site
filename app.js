@@ -13,7 +13,9 @@ const $$ = (s) => Array.from(document.querySelectorAll(s));
 const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
 
 function loadJson(path) {
-  if (!cache.has(path)) cache.set(path, fetch(path).then((r) => (r.ok ? r.json() : null)));
+  // no-cache は「毎回サーバーに更新を確かめ、同じなら手元の分を使う」。確かめずに古い JSON を使うと、
+  // 新しい app.js が探す区分（土曜など）が無くて描画が止まった（2026-09-25）
+  if (!cache.has(path)) cache.set(path, fetch(path, { cache: "no-cache" }).then((r) => (r.ok ? r.json() : null)));
   return cache.get(path);
 }
 
@@ -38,7 +40,8 @@ function step(n) {
 const WD = ["日", "月", "火", "水", "木", "金", "土"];
 function fmtDate(iso) {
   const d = new Date(iso + "T00:00:00");
-  return `${d.getMonth() + 1}月${d.getDate()}日（${WD[d.getDay()]}）`;
+  const hol = (index.holidays || []).includes(iso) ? "・祝" : "";
+  return `${d.getMonth() + 1}月${d.getDate()}日（${WD[d.getDay()]}${hol}）`;
 }
 const md = (iso) => `${+iso.slice(5, 7)}/${+iso.slice(8, 10)}`;
 const fmtRate = (n) => (n == null ? "—" : `1/${Math.round(n)}`);
@@ -54,11 +57,11 @@ async function current() {
     const m = index.months[state.monthIdx];
     const doc = await loadJson(`data/monthly/${m}.json`);
     const label = doc ? `${+m.slice(5)}月（${md(doc.first_date)}〜${md(doc.last_date)}）` : m;
-    return { rows: doc ? doc.splits[state.split] : [], label, nav: true };
+    return { rows: (doc && doc.splits[state.split]) || [], label, nav: true };
   }
   const doc = await loadJson("data/total.json");
   const label = doc ? `累計 ${md(doc.first_date)}〜${md(doc.last_date)}` : "累計";
-  return { rows: doc ? doc.splits[state.split] : [], label, nav: false };
+  return { rows: (doc && doc.splits[state.split]) || [], label, nav: false };
 }
 
 // ▽ の元。日は「その店の累計」、月は「前月」、累計は無し
@@ -68,8 +71,9 @@ async function compare() {
     return { rows: doc ? doc.splits.all : [], label: "この店の累計" };
   }
   if (state.period === "month" && state.monthIdx > 0) {
+    // 前月も同じ切り方で比べる（土曜なら前月の土曜）
     const doc = await loadJson(`data/monthly/${index.months[state.monthIdx - 1]}.json`);
-    return { rows: doc ? doc.splits.all : [], label: "前月" };
+    return { rows: doc ? doc.splits[state.split] || [] : [], label: "前月" };
   }
   return { rows: [], label: "" };
 }
