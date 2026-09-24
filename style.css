@@ -31,5 +31,18 @@ main{max-width:640px;margin:0 auto;padding:8px 16px 40px}
 .cmp{fill:var(--cmp)}.none{font-size:9px;fill:#aaa;text-anchor:middle}
 details{margin-top:4px;font-size:12px;color:var(--sub)}summary{cursor:pointer}
 details table{border-collapse:collapse;margin-top:4px}details td{padding:1px 8px 1px 0}
+.top10 summary{font-weight:600;color:var(--fg)}
+.top10 .seg{margin:6px 0}
+.pills{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0}
+.pills button{border:1px solid var(--line);background:var(--card);border-radius:999px;padding:4px 10px;font-size:12px;color:var(--fg)}
+.pills button.on{background:var(--on);color:#fff;border-color:var(--on)}
+.toptable{width:100%;border-collapse:collapse;font-size:13px;color:var(--fg);font-variant-numeric:tabular-nums}
+.toptable tr{border-bottom:1px solid #eee}
+.toptable td{padding:4px 4px 4px 0;white-space:nowrap}
+.toptable .rk{color:var(--sub);width:34px}
+.toptable .no{font-weight:600}.toptable .no small{display:block;font-weight:400;font-size:10px;color:var(--sub)}
+.toptable .rt,.toptable .gm{text-align:right}
+.toptable .br{text-align:right;font-size:11px;color:var(--sub)}
+.cond{font-size:11px;color:var(--sub);margin:6px 0 0}
 .foot{font-size:12px;color:var(--sub);margin-top:16px}
 .empty{color:var(--sub);text-align:center;padding:24px 0}

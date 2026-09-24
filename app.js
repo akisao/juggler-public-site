@@ -1,7 +1,11 @@
 // 公開サイトの主画面。JSON を読んで絵にするだけで、ここでは何も計算しない。
 "use strict";
 
-const state = { period: "day", split: "all", machine: null, dayIdx: 0, monthIdx: 0 };
+// topScope: null は主画面の機種タブに合わせる。機種キーか "all"（店全体）を選ぶとそれを保つ
+const state = { period: "day", split: "all", machine: null, dayIdx: 0, monthIdx: 0,
+  topMetric: "reg", topScope: null };
+// 開いているトップ10（店の公開ID）。期間や機種を切り替えて描き直しても開いたままにする
+const openTops = new Set();
 let index = null;
 const cache = new Map();
 const $ = (s) => document.querySelector(s);
@@ -107,7 +111,66 @@ function rowHtml(r, cmp) {
     <tr><td>店舗平均設定 <a class="q" href="notes.html#mean">?</a></td><td>${ms ? `${ms.value.toFixed(2)}（${ms.low.toFixed(1)}〜${ms.high.toFixed(1)}）` : "—"}</td></tr>
     ${totalsNote}
   </table></details>
+  <details class="top10" data-shop="${r.shop}"${openTops.has(r.shop) ? " open" : ""}>
+    <summary>台ごとトップ10</summary><div class="topbody"></div></details>
 </article>`;
+}
+
+// --- 台ごとトップ10 -------------------------------------------------------
+// 主画面を開く速さを落とさないよう別ファイルにしてあり、開いたときに今の期間の1つだけ読む
+function topPath() {
+  if (state.period === "day") return `data/top/daily/${index.dates[state.dayIdx]}.json`;
+  if (state.period === "month") return `data/top/monthly/${index.months[state.monthIdx]}.json`;
+  return "data/top/total.json";
+}
+
+const machineName = (k) => (index.machines.find((m) => m.key === k) || { name: k }).name;
+
+function topRowsHtml(list, withMachine) {
+  if (!list.length) return `<p class="empty">条件に合う台がありません</p>`;
+  return `<table class="toptable">${list.map((t, i) => `<tr>
+    <td class="rk">${i + 1}位</td>
+    <td class="no">${t.no}${withMachine ? `<small>${machineName(t.machine)}</small>` : ""}</td>
+    <td class="rt">${fmtRate(t.rate)}</td>
+    <td class="gm">${t.games.toLocaleString()}G</td>
+    <td class="br">BB ${t.big} / RB ${t.reg}</td></tr>`).join("")}</table>`;
+}
+
+async function fillTop(el) {
+  const body = el.querySelector(".topbody");
+  const path = topPath();
+  body.innerHTML = `<p class="empty">読み込み中…</p>`;
+  const doc = await loadJson(path);
+  // 読んでいる間に期間が切り替わっていたら、新しいほうの描画に任せる
+  if (!el.isConnected || path !== topPath()) return;
+  const byShop = !doc ? null : state.period === "day" ? doc.shops : doc.splits[state.split];
+  const table = byShop && byShop[el.dataset.shop];
+  // 機種の並びは機種タブと同じ順。その店・その期間に台がある機種だけ
+  const keys = !table ? [] : index.machines.map((m) => m.key).filter((k) => table.machines[k]);
+  let scope = state.topScope || state.machine;
+  // 選んでいた機種がこの店に無ければ、主画面の機種タブに戻す
+  if (scope !== "all" && !keys.includes(scope)) scope = keys.includes(state.machine) ? state.machine : keys[0];
+  const scoped = !table || !scope ? null : scope === "all" ? table.all : table.machines[scope];
+  const metricSeg = `<nav class="seg small">${[["big", "BIG"], ["reg", "REG"], ["combined", "合算"]].map(([v, label]) =>
+    `<button data-metric="${v}" class="${state.topMetric === v ? "on" : ""}">${label}</button>`).join("")}</nav>`;
+  const scopeTabs = `<nav class="pills">${keys.concat(["all"]).map((k) =>
+    `<button data-scope="${k}" class="${scope === k ? "on" : ""}">${k === "all" ? "店全体" : machineName(k)}</button>`).join("")}</nav>`;
+  const cond = !doc ? "" : state.period === "day"
+    ? `${doc.min_games.toLocaleString()}回転以上の台から`
+    : `1日平均${doc.min_games_per_day.toLocaleString()}回転以上の台から`;
+  body.innerHTML = metricSeg + scopeTabs
+    + (scoped ? topRowsHtml(scoped[state.topMetric], scope === "all")
+              : `<p class="empty">この条件のデータはありません</p>`)
+    + `<p class="cond">${cond}（対象 ${scoped ? scoped.eligible : 0}台）<a class="q" href="notes.html#top10">?</a></p>`;
+  body.querySelectorAll("button[data-metric]").forEach((b) => (b.onclick = () => {
+    state.topMetric = b.dataset.metric; refreshTops(); }));
+  body.querySelectorAll("button[data-scope]").forEach((b) => (b.onclick = () => {
+    state.topScope = b.dataset.scope; refreshTops(); }));
+}
+
+// REG/合算・機種/店全体の切替は、開いている全部の店にそろえて描き直す
+function refreshTops() {
+  $$("details.top10[open]").forEach(fillTop);
 }
 
 async function render() {
@@ -140,6 +203,12 @@ async function render() {
   $("#rows").innerHTML = rows.length
     ? rows.map((r) => rowHtml(r, cmpOf(r))).join("")
     : `<p class="empty">この条件のデータはありません</p>`;
+  $$("details.top10").forEach((el) => {
+    el.addEventListener("toggle", () => {
+      if (el.open) { openTops.add(el.dataset.shop); fillTop(el); } else openTops.delete(el.dataset.shop);
+    });
+  });
+  refreshTops();
 }
 
 init();
