@@ -31,6 +31,8 @@ main{max-width:640px;margin:0 auto;padding:8px 16px 40px}
 .cmp{fill:var(--cmp)}.none{font-size:9px;fill:#aaa;text-anchor:middle}
 details{margin-top:4px;font-size:12px;color:var(--sub)}summary{cursor:pointer}
 details table{border-collapse:collapse;margin-top:4px}details td{padding:1px 8px 1px 0}
+.shop.absent{opacity:.55;padding:8px 12px}
+.shop.absent header{margin:0}.shop.absent p{margin:2px 0 0;font-size:12px;color:var(--sub)}
 .top10 summary{font-weight:600;color:var(--fg)}
 .top10 .seg{margin:6px 0}
 .pills{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0}

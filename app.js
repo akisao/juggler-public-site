@@ -202,9 +202,16 @@ async function render() {
   const rows = cur.rows.filter((r) => r.machine === state.machine)
     .sort((a, b) => (b.reg.pos ?? -9) - (a.reg.pos ?? -9));
   const cmpOf = (r) => cmp.rows.find((c) => c.shop === r.shop && c.machine === r.machine);
-  $("#rows").innerHTML = rows.length
+  // その機種が無い店も名前だけ下に出す。出さないと「店ごと載っていない」と誤解される
+  // （ロイヤルにはマイジャグVが無く、既定のタブで店が消えて見えた。2026-09-25）
+  const missing = index.shops.filter((s) => !rows.some((r) => r.shop === s.id)).map((s) => {
+    const other = cur.rows.some((r) => r.shop === s.id);
+    return `<article class="shop absent"><header><b>${s.name}</b></header>
+  <p>${other ? "この機種は置いていません" : "この期間のデータはありません"}</p></article>`;
+  }).join("");
+  $("#rows").innerHTML = (rows.length
     ? rows.map((r) => rowHtml(r, cmpOf(r))).join("")
-    : `<p class="empty">この条件のデータはありません</p>`;
+    : `<p class="empty">この条件のデータはありません</p>`) + missing;
   $$("details.top10").forEach((el) => {
     el.addEventListener("toggle", () => {
       if (el.open) { openTops.add(el.dataset.shop); fillTop(el); } else openTops.delete(el.dataset.shop);
