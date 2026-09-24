@@ -124,6 +124,8 @@ function topPath() {
   return "data/top/total.json";
 }
 
+// BIG は設定差がごく小さく「相当」が意味を持たないので、書き出し側で null にしてある
+const fmtPos = (p) => (p == null ? "" : `<small>${p < 1 ? "設定1未満" : `設定${p.toFixed(1)}相当`}</small>`);
 const machineName = (k) => (index.machines.find((m) => m.key === k) || { name: k }).name;
 
 function topRowsHtml(list, withMachine) {
@@ -131,7 +133,7 @@ function topRowsHtml(list, withMachine) {
   return `<table class="toptable">${list.map((t, i) => `<tr>
     <td class="rk">${i + 1}位</td>
     <td class="no">${t.no}${withMachine ? `<small>${machineName(t.machine)}</small>` : ""}</td>
-    <td class="rt">${fmtRate(t.rate)}</td>
+    <td class="rt">${fmtRate(t.rate)}${fmtPos(t.pos)}</td>
     <td class="gm">${t.games.toLocaleString()}G</td>
     <td class="br">BB ${t.big} / RB ${t.reg}</td></tr>`).join("")}</table>`;
 }
