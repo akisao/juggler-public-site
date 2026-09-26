@@ -2,9 +2,9 @@
 "use strict";
 
 // topScope: null は主画面の機種タブに合わせる。機種キーか "all"（店全体）を選ぶとそれを保つ
-// 月・累計の主役（赤丸・並び順・トップ10）は常に全日。ほかの区分は overlays に入れた分だけ色を変えて重ねる
-// （全日と見比べたい、というアキラさんの要望。2026-09-27）
-const state = { period: "day", overlays: new Set(), machine: null, dayIdx: 0, monthIdx: 0,
+// 月・累計の並び順とトップ10は常に全日。点はどの区分もタップで出し入れし、overlays に入れた分だけ色を変えて重ねる
+// （全日と見比べたい、というアキラさんの要望。2026-09-27）。showAll は全日の点を出すか
+const state = { period: "day", showAll: true, overlays: new Set(), machine: null, dayIdx: 0, monthIdx: 0,
   topMetric: "reg", topScope: null };
 // 並びは画面のボタンと同じ。色は style.css の --c-<キー> で決めている
 const SPLITS = [["special", "特定日"], ["normal", "平常日"], ["weekday", "平日"],
@@ -32,8 +32,7 @@ async function init() {
   $$("#period button").forEach((b) => (b.onclick = () => { state.period = b.dataset.v; render(); }));
   $$("#split button").forEach((b) => (b.onclick = () => {
     const v = b.dataset.v;
-    // 全日は外せない。押したら重ねた分を全部消す
-    if (v === "all") state.overlays.clear();
+    if (v === "all") state.showAll = !state.showAll;
     else if (state.overlays.has(v)) state.overlays.delete(v);
     else state.overlays.add(v);
     render();
@@ -93,7 +92,7 @@ const X0 = 16, X1 = 284, W = 300;
 const xOf = (p) => X0 + ((clamp(p, 0.5, 6.5) - 1) / 5) * (X1 - X0);
 
 // extras: 重ねる区分 [{key, pt}]。全日の赤丸より先に描き、赤丸を一番上にする
-function scaleSvg(pt, cmp, extras = []) {
+function scaleSvg(pt, cmp, extras = [], showBase = true) {
   let s = `<svg viewBox="0 0 ${W} 30" class="scale" aria-hidden="true">`;
   s += `<line x1="${X0}" y1="15" x2="${X1}" y2="15" class="axis"/>`;
   for (let i = 1; i <= 6; i++) {
@@ -106,6 +105,7 @@ function scaleSvg(pt, cmp, extras = []) {
     const eo = e.pt.pos < 1 || e.pt.pos > 6 ? " out" : "";
     s += `<circle cx="${xOf(e.pt.pos)}" cy="15" r="5" class="ov c-${e.key}${eo}"/>`;
   }
+  if (!showBase) return s + "</svg>";
   if (pt.pos == null) return s + `<text x="${W / 2}" y="18" class="none">回数が足りません</text></svg>`;
   // 幅（95%）は出さない。機種ごとの合計から出した平均なので、設定として見れば
   // ぶれて当たり前。あくまで目安として点だけ見せる（2026-09-23 アキラさん判断）
@@ -124,7 +124,7 @@ function overlayHtml(extras) {
     <td>合算 ${e.row ? fmtRate(e.row.combined.rate) : "—"}</td></tr>`).join("")}</table>`;
 }
 
-function rowHtml(r, cmp, extras = []) {
+function rowHtml(r, cmp, extras = [], showBase = true) {
   const shop = index.shops.find((s) => s.id === r.shop);
   const star = r.special ? "<em>★特定日</em>" : "";
   const days = r.days > 1 ? `<span>${r.days}日</span>` : "";
@@ -133,9 +133,9 @@ function rowHtml(r, cmp, extras = []) {
   return `<article class="shop">
   <header><b>${shop ? shop.name : r.shop}</b><span>${r.units > 0 ? r.units + "台" : "台数不明"}</span>${days}${star}</header>
   <div class="line"><span class="lbl">REG</span>${scaleSvg(r.reg, cmp && cmp.reg,
-    extras.map((e) => ({ key: e.key, pt: e.row && e.row.reg })))}<span class="val">${fmtRate(r.reg.rate)}</span></div>
+    extras.map((e) => ({ key: e.key, pt: e.row && e.row.reg })), showBase)}<span class="val">${showBase ? fmtRate(r.reg.rate) : ""}</span></div>
   <div class="line"><span class="lbl">合算</span>${scaleSvg(r.combined, cmp && cmp.combined,
-    extras.map((e) => ({ key: e.key, pt: e.row && e.row.combined })))}<span class="val">${fmtRate(r.combined.rate)}</span></div>
+    extras.map((e) => ({ key: e.key, pt: e.row && e.row.combined })), showBase)}<span class="val">${showBase ? fmtRate(r.combined.rate) : ""}</span></div>
   ${overlayHtml(extras)}
   <details><summary>くわしく</summary><table>
     <tr><td>REG の幅</td><td>${fmtCi(r.reg.ci)}</td></tr>
@@ -211,7 +211,7 @@ function refreshTops() {
 
 async function render() {
   $$("#period button").forEach((b) => b.classList.toggle("on", b.dataset.v === state.period));
-  $$("#split button").forEach((b) => b.classList.toggle("on", b.dataset.v === "all" || state.overlays.has(b.dataset.v)));
+  $$("#split button").forEach((b) => b.classList.toggle("on", b.dataset.v === "all" ? state.showAll : state.overlays.has(b.dataset.v)));
   $("#split").hidden = state.period === "day";
   const cur = await current();
   const cmp = await compare();
@@ -220,6 +220,8 @@ async function render() {
   $("#next").disabled = !cur.nav || (state.period === "day" ? state.dayIdx === index.dates.length - 1 : state.monthIdx === index.months.length - 1);
   $("#dotLabel").textContent = state.period === "day" ? "● 実測" : "● 全日";
   $("#dotLabel").className = state.period === "day" ? "" : "c-all";
+  const showBase = state.period === "day" || state.showAll;
+  $("#dotLabel").hidden = !showBase;
   $("#cmpLegend").hidden = !cmp.label;
   $("#cmpLabel").textContent = cmp.label;
 
@@ -250,7 +252,7 @@ async function render() {
   <p>${other ? "この機種は置いていません" : "この期間のデータはありません"}</p></article>`;
   }).join("");
   $("#rows").innerHTML = (rows.length
-    ? rows.map((r) => rowHtml(r, cmpOf(r), extrasOf(r))).join("")
+    ? rows.map((r) => rowHtml(r, cmpOf(r), extrasOf(r), showBase)).join("")
     : `<p class="empty">この条件のデータはありません</p>`) + missing;
   $$("details.top10").forEach((el) => {
     el.addEventListener("toggle", () => {
