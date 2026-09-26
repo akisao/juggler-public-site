@@ -1,4 +1,4 @@
-:root{--bg:#f7f6f2;--fg:#222;--sub:#666;--line:#cfcac0;--card:#fff;--on:#2b2b2b;--dot:#d3452b;--cmp:#3b6ea5;--out:#8a2be2}
+:root{--bg:#f7f6f2;--fg:#222;--sub:#666;--line:#cfcac0;--card:#fff;--on:#2b2b2b;--dot:#d3452b;--cmp:#555;--out:#8a2be2}
 *{box-sizing:border-box}
 [hidden]{display:none !important}
 body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.5 system-ui,-apple-system,"Segoe UI","Hiragino Sans","Noto Sans JP",sans-serif}
@@ -47,5 +47,19 @@ details table{border-collapse:collapse;margin-top:4px}details td{padding:1px 8px
 .toptable .rt small{display:block;font-size:10px;color:var(--dot)}
 .toptable .br{text-align:right;font-size:11px;color:var(--sub)}
 .cond{font-size:11px;color:var(--sub);margin:6px 0 0}
+/* 区分の色。ボタンの文字・重ねる ● ・下の数字で同じ色を使う。赤は全日、紫は目盛りの外なので使わない */
+:root{--c-all:var(--dot);--c-special:#1f6fd6;--c-normal:#2e9a4e;--c-weekday:#8a6a2f;--c-sat:#0f9fb0;--c-sun:#e8890c;--c-holiday:#e0569b}
+.c-all{--c:var(--c-all)}.c-special,#split [data-v=special]{--c:var(--c-special)}.c-normal,#split [data-v=normal]{--c:var(--c-normal)}
+.c-weekday,#split [data-v=weekday]{--c:var(--c-weekday)}.c-sat,#split [data-v=sat]{--c:var(--c-sat)}
+.c-sun,#split [data-v=sun]{--c:var(--c-sun)}.c-holiday,#split [data-v=holiday]{--c:var(--c-holiday)}
+#split [data-v=all]{--c:var(--c-all)}
+#split button{color:var(--c);font-weight:600}
+#split button.on{background:var(--c);border-color:var(--c);color:#fff}
+.legend .c-all{color:var(--c-all);font-weight:600}
+.hint{font-size:11px;color:var(--sub);margin:0 0 4px}
+.ov{fill:var(--c);stroke:#fff;stroke-width:1.5}.ov.out{fill:#fff;stroke:var(--c);stroke-width:2}
+.dot{stroke:#fff;stroke-width:1.5}
+.ovl{border-collapse:collapse;font-size:12px;margin:2px 0 0 40px;font-variant-numeric:tabular-nums;color:var(--fg)}
+.ovl td{padding:0 10px 0 0;white-space:nowrap}.ovl .k{color:var(--c);font-weight:600}
 .foot{font-size:12px;color:var(--sub);margin-top:16px}
 .empty{color:var(--sub);text-align:center;padding:24px 0}
