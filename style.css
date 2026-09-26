@@ -27,7 +27,7 @@ main{max-width:640px;margin:0 auto;padding:8px 16px 40px}
 .lbl{font-size:12px;color:var(--sub)}.val{font-size:13px;text-align:right;font-variant-numeric:tabular-nums}
 .scale{width:100%;height:30px;display:block}
 .axis{stroke:#999;stroke-width:1}.tick{stroke:#bbb;stroke-width:1}.tl{font-size:8px;fill:#999;text-anchor:middle}
-.dot{fill:var(--dot)}.dot.out{fill:var(--out)}
+.dot{fill:var(--c-all)}.dot.out{fill:var(--out)}
 .cmp{fill:var(--cmp)}.none{font-size:9px;fill:#aaa;text-anchor:middle}
 details{margin-top:4px;font-size:12px;color:var(--sub)}summary{cursor:pointer}
 details table{border-collapse:collapse;margin-top:4px}details td{padding:1px 8px 1px 0}
@@ -47,8 +47,8 @@ details table{border-collapse:collapse;margin-top:4px}details td{padding:1px 8px
 .toptable .rt small{display:block;font-size:10px;color:var(--dot)}
 .toptable .br{text-align:right;font-size:11px;color:var(--sub)}
 .cond{font-size:11px;color:var(--sub);margin:6px 0 0}
-/* 区分の色。ボタンの文字・重ねる ● ・下の数字で同じ色を使う。赤は全日、紫は目盛りの外なので使わない */
-:root{--c-all:var(--dot);--c-special:#1f6fd6;--c-normal:#2e9a4e;--c-weekday:#8a6a2f;--c-sat:#0f9fb0;--c-sun:#e8890c;--c-holiday:#e0569b}
+/* 区分の色。ボタンの文字・重ねる ● ・下の数字で同じ色を使う。紫は目盛りの外なので使わない */
+:root{--c-all:#222;--c-special:#d3452b;--c-normal:#1f6fd6;--c-weekday:#8a6a2f;--c-sat:#0f9fb0;--c-sun:#e8890c;--c-holiday:#e0569b}
 .c-all{--c:var(--c-all)}.c-special,#split [data-v=special]{--c:var(--c-special)}.c-normal,#split [data-v=normal]{--c:var(--c-normal)}
 .c-weekday,#split [data-v=weekday]{--c:var(--c-weekday)}.c-sat,#split [data-v=sat]{--c:var(--c-sat)}
 .c-sun,#split [data-v=sun]{--c:var(--c-sun)}.c-holiday,#split [data-v=holiday]{--c:var(--c-holiday)}
