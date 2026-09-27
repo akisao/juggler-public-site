@@ -39,7 +39,26 @@ async function init() {
   }));
   $("#prev").onclick = () => step(-1);
   $("#next").onclick = () => step(1);
+  // 操作ボタンまで固定するとスマホで場所を取るので、条件の要約だけを、操作部が画面外に出たときに出す
+  // （店を下まで見ていると何を表示中か分からなくなる、というアキラさんの指摘。2026-09-28）
+  const sticky = $("#sticky");
+  sticky.onclick = () => $("#app").scrollIntoView({ behavior: "smooth" });
+  new IntersectionObserver(([e]) => {
+    sticky.hidden = e.isIntersecting || e.boundingClientRect.top > 0;
+  }).observe($("#machines"));
   render();
+}
+
+// 固定バーの文言。月は範囲まで書くと長いので月だけ
+function stickyHtml() {
+  const when = state.period === "day" ? fmtDate(index.dates[state.dayIdx])
+    : state.period === "month" ? `${+index.months[state.monthIdx].slice(5)}月` : "累計";
+  const parts = [when, state.machine ? machineName(state.machine) : "—"];
+  if (state.period !== "day") {
+    const on = (state.showAll ? [["all", "全日"]] : []).concat(SPLITS.filter(([k]) => state.overlays.has(k)));
+    parts.push(on.length ? on.map(([k, label]) => `<span class="c-${k}">${label}</span>`).join("・") : "点なし");
+  }
+  return parts.join('<i>｜</i>');
 }
 
 function step(n) {
@@ -55,6 +74,7 @@ function fmtDate(iso) {
   return `${d.getMonth() + 1}月${d.getDate()}日（${WD[d.getDay()]}${hol}）`;
 }
 const md = (iso) => `${+iso.slice(5, 7)}/${+iso.slice(8, 10)}`;
+const fmtInt = (n) => (n == null ? "—" : n.toLocaleString("ja-JP"));
 const fmtRate = (n) => (n == null ? "—" : `1/${Math.round(n)}`);
 const fmtCi = (ci) => (ci[0] == null ? "—" : `1/${Math.round(ci[0])}〜${ci[1] == null ? "∞" : "1/" + Math.round(ci[1])}`);
 
@@ -88,29 +108,50 @@ async function compare() {
   return { rows: [], label: "" };
 }
 
-const X0 = 16, X1 = 284, W = 300;
+const X0 = 16, X1 = 284, W = 300, AXIS_Y = 15;
 const xOf = (p) => X0 + ((clamp(p, 0.5, 6.5) - 1) / 5) * (X1 - X0);
+// 重なった点は下の段へ逃がす。左右にずらすと位置の意味が変わるため（2026-09-28 アキラさん案）。
+// 上へ逃がさないのは、軸の上に ▽ があって紛れるから
+const DOT_R = 5, MIN_GAP = 9, LANE_STEP = 8, MAX_LANE = 2;
+const TALL_H = 44, SHORT_H = 30;
 
-// extras: 重ねる区分 [{key, pt}]。全日の赤丸より先に描き、赤丸を一番上にする
+// 先に置いた点ほど軸に近い段を取る。全日を最初に置き、全日は常に軸の上に残す
+function assignLanes(dots) {
+  const placed = [];
+  for (const d of dots) {
+    let lane = 0;
+    while (lane < MAX_LANE && placed.some((p) => p.lane === lane && Math.abs(p.x - d.x) < MIN_GAP)) lane++;
+    d.lane = lane;
+    placed.push(d);
+  }
+  return dots;
+}
+
+// extras: 重ねる区分 [{key, pt}]。全日の点を一番上に描く
 function scaleSvg(pt, cmp, extras = [], showBase = true) {
-  let s = `<svg viewBox="0 0 ${W} 30" class="scale" aria-hidden="true">`;
-  s += `<line x1="${X0}" y1="15" x2="${X1}" y2="15" class="axis"/>`;
+  const h = extras.length ? TALL_H : SHORT_H;
+  let s = `<svg viewBox="0 0 ${W} ${h}" class="scale${extras.length ? " tall" : ""}" aria-hidden="true">`;
+  s += `<line x1="${X0}" y1="${AXIS_Y}" x2="${X1}" y2="${AXIS_Y}" class="axis"/>`;
   for (let i = 1; i <= 6; i++) {
     s += `<line x1="${xOf(i)}" y1="10" x2="${xOf(i)}" y2="20" class="tick"/>`;
-    s += `<text x="${xOf(i)}" y="29" class="tl">${i}</text>`;
+    s += `<text x="${xOf(i)}" y="${h - 1}" class="tl">${i}</text>`;
   }
   if (cmp && cmp.pos != null) s += `<path d="M${xOf(cmp.pos) - 4} 1 l8 0 l-4 7 z" class="cmp"/>`;
-  for (const e of extras) {
-    if (!e.pt || e.pt.pos == null) continue;
-    const eo = e.pt.pos < 1 || e.pt.pos > 6 ? " out" : "";
-    s += `<circle cx="${xOf(e.pt.pos)}" cy="15" r="5" class="ov c-${e.key}${eo}"/>`;
+  const isOut = (p) => p < 1 || p > 6;
+  const base = showBase && pt.pos != null ? [{ x: xOf(pt.pos), cls: `dot${isOut(pt.pos) ? " out" : ""}`, key: null }] : [];
+  const ovs = extras.filter((e) => e.pt && e.pt.pos != null)
+    .map((e) => ({ x: xOf(e.pt.pos), cls: `ov c-${e.key}${isOut(e.pt.pos) ? " out" : ""}`, key: e.key }));
+  const dots = assignLanes(base.concat(ovs));
+  // 段を下げた点は、細い線で軸の上の本来の位置とつなぐ
+  for (const d of dots) {
+    if (d.lane > 0) s += `<line x1="${d.x}" y1="${AXIS_Y}" x2="${d.x}" y2="${AXIS_Y + d.lane * LANE_STEP}" class="tether c-${d.key}"/>`;
   }
-  if (!showBase) return s + "</svg>";
-  if (pt.pos == null) return s + `<text x="${W / 2}" y="18" class="none">回数が足りません</text></svg>`;
+  for (const d of dots.slice().reverse()) {
+    s += `<circle cx="${d.x}" cy="${AXIS_Y + d.lane * LANE_STEP}" r="${DOT_R}" class="${d.cls}"/>`;
+  }
   // 幅（95%）は出さない。機種ごとの合計から出した平均なので、設定として見れば
   // ぶれて当たり前。あくまで目安として点だけ見せる（2026-09-23 アキラさん判断）
-  const out = pt.pos < 1 || pt.pos > 6 ? " out" : "";
-  s += `<circle cx="${xOf(pt.pos)}" cy="15" r="5" class="dot${out}"/>`;
+  if (showBase && pt.pos == null) s += `<text x="${W / 2}" y="18" class="none">回数が足りません</text>`;
   return s + "</svg>";
 }
 
@@ -122,6 +163,12 @@ function overlayHtml(extras) {
     <td>${e.row ? e.row.days + "日" : ""}</td>
     <td>REG ${e.row ? fmtRate(e.row.reg.rate) : "—"}</td>
     <td>合算 ${e.row ? fmtRate(e.row.combined.rate) : "—"}</td></tr>`).join("")}</table>`;
+}
+
+// 1日だけのときは日別の振れ幅が出せず、書き出し側がその日の95%の幅を入れてくる。同じ括弧で見せると取り違える
+function meanRange(days, ms) {
+  const lo = ms.low.toFixed(1), hi = ms.high.toFixed(1);
+  return days > 1 ? `日別の最小${lo}〜最大${hi}` : `95%の幅 ${lo}〜${hi}`;
 }
 
 function rowHtml(r, cmp, extras = [], showBase = true) {
@@ -141,8 +188,11 @@ function rowHtml(r, cmp, extras = [], showBase = true) {
     <tr><td>REG の幅</td><td>${fmtCi(r.reg.ci)}</td></tr>
     <tr><td>合算の幅</td><td>${fmtCi(r.combined.ci)}</td></tr>
     <tr><td>BIG</td><td>${fmtRate(r.big.rate)}（${fmtCi(r.big.ci)}）</td></tr>
-    <tr><td>回転 / BB / RB</td><td>${r.games.toLocaleString()} / ${r.big_count} / ${r.reg_count}</td></tr>
-    <tr><td>店舗平均設定 <a class="q" href="notes.html#mean">?</a></td><td>${ms ? `${ms.value.toFixed(2)}（${ms.low.toFixed(1)}〜${ms.high.toFixed(1)}）` : "—"}</td></tr>
+    <tr><td colspan="2"><table class="cnt">
+      <tr><th>回転</th><th>BB</th><th>RB</th></tr>
+      <tr><td>${fmtInt(r.games)}</td><td>${fmtInt(r.big_count)}</td><td>${fmtInt(r.reg_count)}</td></tr>
+    </table></td></tr>
+    <tr><td>店舗平均設定 <a class="q" href="notes.html#mean">?</a></td><td>${ms ? `${ms.value.toFixed(2)}（${meanRange(r.days, ms)}）` : "—"}</td></tr>
     ${totalsNote}
   </table></details>
   <details class="top10" data-shop="${r.shop}"${openTops.has(r.shop) ? " open" : ""}>
@@ -168,8 +218,8 @@ function topRowsHtml(list, withMachine) {
     <td class="rk">${i + 1}位</td>
     <td class="no">${t.no}${withMachine ? `<small>${machineName(t.machine)}</small>` : ""}</td>
     <td class="rt">${fmtRate(t.rate)}${fmtPos(t.pos)}</td>
-    <td class="gm">${t.games.toLocaleString()}G</td>
-    <td class="br">BB ${t.big} / RB ${t.reg}</td></tr>`).join("")}</table>`;
+    <td class="gm">${fmtInt(t.games)}G</td>
+    <td class="br">BB ${fmtInt(t.big)} / RB ${fmtInt(t.reg)}</td></tr>`).join("")}</table>`;
 }
 
 async function fillTop(el) {
@@ -236,6 +286,7 @@ async function render() {
   // 既定のマイジャグVはタブ列の右のほうにあり、スマホ幅だと画面外に隠れる
   const onTab = $("#machines button.on");
   if (onTab) onTab.scrollIntoView({ block: "nearest", inline: "center" });
+  $("#stickyText").innerHTML = stickyHtml();
 
   // REG の位置が高い店から。位置が出せない店は最後
   const rows = cur.rows.filter((r) => r.machine === state.machine)
