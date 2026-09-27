@@ -1,4 +1,4 @@
-# ジャグラー 店くらべ（公開サイト）
+# ペカジャグ観測所（公開サイト）
 
 見るだけのサイト。データは `data/` の JSON だけで、取り込みアプリ
 （`C:\Users\Owner\juggler-analyzer-paste`）の `juggler export-public` が書く。

@@ -1,6 +1,6 @@
 {
-  "name": "ジャグラー 店くらべ",
-  "short_name": "店くらべ",
+  "name": "ペカジャグ観測所",
+  "short_name": "ペカジャグ",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
