@@ -165,17 +165,14 @@ function overlayHtml(extras) {
     <td>合算 ${e.row ? fmtRate(e.row.combined.rate) : "—"}</td></tr>`).join("")}</table>`;
 }
 
-// 1日だけのときは日別の振れ幅が出せず、書き出し側がその日の95%の幅を入れてくる。同じ括弧で見せると取り違える
-function meanRange(days, ms) {
-  const lo = ms.low.toFixed(1), hi = ms.high.toFixed(1);
-  return days > 1 ? `日別の最小${lo}〜最大${hi}` : `95%の幅 ${lo}〜${hi}`;
-}
+// 推定設定は全台の合計の確率を公表値の目盛りに置いた位置（グラフの ● と同じ数字）。
+// 台ごとの推定の平均は出ている日ほど低く出るので使わない（2026-10-02 アキラさん決定・速報と同じ考え方）
+const fmtSetting = (pt) => (pt && pt.pos != null ? pt.pos.toFixed(1) : "—");
 
 function rowHtml(r, cmp, extras = [], showBase = true) {
   const shop = index.shops.find((s) => s.id === r.shop);
   const star = r.special ? "<em>★特定日</em>" : "";
   const days = r.days > 1 ? `<span>${r.days}日</span>` : "";
-  const ms = r.mean_setting;
   const totalsNote = r.from_totals_days ? `<tr><td>機種合算のみの日</td><td>${r.from_totals_days}日</td></tr>` : "";
   return `<article class="shop">
   <header><b>${shop ? shop.name : r.shop}</b><span>${r.units > 0 ? r.units + "台" : "台数不明"}</span>${days}${star}</header>
@@ -192,7 +189,7 @@ function rowHtml(r, cmp, extras = [], showBase = true) {
       <tr><th>回転</th><th>BB</th><th>RB</th></tr>
       <tr><td>${fmtInt(r.games)}</td><td>${fmtInt(r.big_count)}</td><td>${fmtInt(r.reg_count)}</td></tr>
     </table></td></tr>
-    <tr><td>店舗平均設定 <a class="q" href="notes.html#mean">?</a></td><td>${ms ? `${ms.value.toFixed(2)}（${meanRange(r.days, ms)}）` : "—"}</td></tr>
+    <tr><td>推定設定 <a class="q" href="notes.html#mean">?</a></td><td>合算 ${fmtSetting(r.combined)}　REG ${fmtSetting(r.reg)}　BIG ${fmtSetting(r.big)}</td></tr>
     ${totalsNote}
   </table></details>
   <details class="top10" data-shop="${r.shop}"${openTops.has(r.shop) ? " open" : ""}>
