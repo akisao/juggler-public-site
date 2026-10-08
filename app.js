@@ -4,8 +4,10 @@
 // topScope: null は主画面の機種タブに合わせる。機種キーか "all"（店全体）を選ぶとそれを保つ
 // 月・累計の並び順とトップ10は常に全日。点はどの区分もタップで出し入れし、overlays に入れた分だけ色を変えて重ねる
 // （全日と見比べたい、というアキラさんの要望。2026-09-27）。showAll は全日の点を出すか
+// view: "grid" は店×機種の一覧（入口）、"machine" は機種を1つ選んで全店を並べる画面。
+// pick は一覧で押したます目 {shop, machine}。押すとその組のカードを表の下に開く（2026-10-08 アキラさん）
 const state = { period: "day", showAll: true, overlays: new Set(), machine: null, dayIdx: 0, monthIdx: 0,
-  topMetric: "reg", topScope: null };
+  topMetric: "reg", topScope: null, view: "grid", gridMetric: "reg", pick: null };
 // 並びは画面のボタンと同じ。色は style.css の --c-<キー> で決めている
 const SPLITS = [["special", "特定日"], ["normal", "平常日"], ["weekday", "平日"],
   ["sat", "土曜"], ["sun", "日曜"], ["holiday", "祝日"]];
@@ -53,7 +55,7 @@ async function init() {
 function stickyHtml() {
   const when = state.period === "day" ? fmtDate(index.dates[state.dayIdx])
     : state.period === "month" ? `${+index.months[state.monthIdx].slice(5)}月` : "累計";
-  const parts = [when, state.machine ? machineName(state.machine) : "—"];
+  const parts = [when, state.view === "grid" ? "一覧" : state.machine ? machineName(state.machine) : "—"];
   if (state.period !== "day") {
     const on = (state.showAll ? [["all", "全日"]] : []).concat(SPLITS.filter(([k]) => state.overlays.has(k)));
     parts.push(on.length ? on.map(([k, label]) => `<span class="c-${k}">${label}</span>`).join("・") : "点なし");
@@ -109,7 +111,9 @@ async function compare() {
 }
 
 const X0 = 16, X1 = 284, W = 300, AXIS_Y = 15;
-const xOf = (p) => X0 + ((clamp(p, 0.5, 6.5) - 1) / 5) * (X1 - X0);
+// 1〜6 の外は端のすぐ外に寄せる。0.5〜6.5 だと 6.4 を超えた点が絵の枠からはみ出して消えていた（2026-10-08）
+const EDGE_MIN = 0.95, EDGE_MAX = 6.05;
+const xOf = (p) => X0 + ((clamp(p, EDGE_MIN, EDGE_MAX) - 1) / 5) * (X1 - X0);
 // 重なった点は下の段へ逃がす。左右にずらすと位置の意味が変わるため（2026-09-28 アキラさん案）。
 // 上へ逃がさないのは、軸の上に ▽ があって紛れるから
 const DOT_R = 5, MIN_GAP = 9, LANE_STEP = 8, MAX_LANE = 2;
@@ -197,6 +201,42 @@ function rowHtml(r, cmp, extras = [], showBase = true) {
 </article>`;
 }
 
+// --- 店×機種の一覧 -------------------------------------------------------
+// 表の列はスマホ幅に6〜7機種を入れるので短い名前にする。無い機種は正式名のまま
+const SHORT_MACHINE = { my_juggler_v: "マイV", my_juggler_vi: "マイⅥ", neo_aim_juggler_ex: "ネオアイム",
+  gogo_juggler_3: "ゴーゴー3", happy_juggler_v3: "ハッピーV3", funky_juggler_2: "ファンキー2",
+  juggler_girls_ss: "ガールズSS" };
+const shortShop = (name) => name.replace(/(苫小牧駅前店|苫小牧店|沼ノ端店|店)$/, "");
+// 色の濃さは目盛りの位置そのまま（1 で薄く 6 で濃く）。順位や平均からの差にはしない
+function cellStyle(pos) {
+  const t = clamp((pos - 1) / 5, 0, 1);
+  return `background:rgba(211,69,43,${(0.06 + 0.8 * t).toFixed(2)});${t > 0.55 ? "color:#fff;" : ""}`;
+}
+const fmtCell = (pos) => (pos < 1 ? "&lt;1" : pos.toFixed(1));
+
+function gridHtml(rows, keys) {
+  const metric = state.gridMetric;
+  const seg = `<nav class="seg small" id="gridMetric">${[["reg", "REG"], ["combined", "合算"]].map(([v, label]) =>
+    `<button data-gm="${v}" class="${metric === v ? "on" : ""}">${label}</button>`).join("")}</nav>`;
+  const head = `<tr><th class="sh"></th>${keys.map((k) => `<th>${SHORT_MACHINE[k] || machineName(k)}</th>`).join("")}</tr>`;
+  const body = index.shops.map((s) => {
+    const mine = rows.filter((r) => r.shop === s.id);
+    const star = mine.some((r) => r.special) ? "<em>★</em>" : "";
+    const cells = keys.map((k) => {
+      const r = mine.find((x) => x.machine === k);
+      if (!r) return `<td class="na">−</td>`;
+      const pos = r[metric].pos;
+      const on = state.pick && state.pick.shop === s.id && state.pick.machine === k ? " pick" : "";
+      if (pos == null) return `<td class="cell nodata${on}" data-shop="${s.id}" data-k="${k}">…</td>`;
+      return `<td class="cell${on}" data-shop="${s.id}" data-k="${k}" style="${cellStyle(pos)}">${fmtCell(pos)}</td>`;
+    }).join("");
+    return `<tr${mine.length ? "" : ' class="absent"'}><th class="sh">${shortShop(s.name)}${star}</th>${cells}</tr>`;
+  }).join("");
+  const note = state.period === "day" ? "" : "表は全日の数字。特定日・曜日のボタンは、開いたカードにだけ重なります。";
+  return `${seg}<table class="grid">${head}${body}</table>
+  <p class="gridnote">数字は推定設定（${metric === "reg" ? "REG" : "合算"}の実測を公表値の目盛りに置いた位置）。赤いほど高い。−は置いていない機種、…は回数が足りない組。ます目を押すとくわしく見られます。${note}</p>`;
+}
+
 // --- 台ごとトップ10 -------------------------------------------------------
 // 主画面を開く速さを落とさないよう別ファイルにしてあり、開いたときに今の期間の1つだけ読む
 function topPath() {
@@ -275,23 +315,32 @@ async function render() {
   // 機種タブは、いま出している期間にデータのある機種だけ
   const keys = index.machines.map((m) => m.key).filter((k) => cur.rows.some((r) => r.machine === k));
   if (!keys.includes(state.machine)) state.machine = keys.includes("my_juggler_v") ? "my_juggler_v" : keys[0] || null;
-  $("#machines").innerHTML = keys.map((k) => {
+  const grid = state.view === "grid";
+  $("#machines").innerHTML = `<button data-k="" class="${grid ? "on" : ""}">一覧</button>` + keys.map((k) => {
     const m = index.machines.find((x) => x.key === k);
-    return `<button data-k="${k}" class="${k === state.machine ? "on" : ""}">${m.name}</button>`;
+    return `<button data-k="${k}" class="${!grid && k === state.machine ? "on" : ""}">${m.name}</button>`;
   }).join("");
-  $$("#machines button").forEach((b) => (b.onclick = () => { state.machine = b.dataset.k; render(); }));
+  $$("#machines button").forEach((b) => (b.onclick = () => {
+    if (b.dataset.k) { state.view = "machine"; state.machine = b.dataset.k; } else state.view = "grid";
+    render();
+  }));
   // 既定のマイジャグVはタブ列の右のほうにあり、スマホ幅だと画面外に隠れる
   const onTab = $("#machines button.on");
   if (onTab) onTab.scrollIntoView({ block: "nearest", inline: "center" });
   $("#stickyText").innerHTML = stickyHtml();
 
-  // REG の位置が高い店から。位置が出せない店は最後
-  const rows = cur.rows.filter((r) => r.machine === state.machine)
-    .sort((a, b) => (b.reg.pos ?? -9) - (a.reg.pos ?? -9));
   const cmpOf = (r) => cmp.rows.find((c) => c.shop === r.shop && c.machine === r.machine);
   const shown = state.period === "day" ? [] : SPLITS.filter(([k]) => state.overlays.has(k));
   const extrasOf = (r) => shown.map(([key, label]) => ({ key, label,
     row: (cur.splits[key] || []).find((c) => c.shop === r.shop && c.machine === r.machine) }));
+  if (grid) {
+    renderGrid(cur.rows, keys, cmpOf, extrasOf, showBase);
+    return;
+  }
+
+  // REG の位置が高い店から。位置が出せない店は最後
+  const rows = cur.rows.filter((r) => r.machine === state.machine)
+    .sort((a, b) => (b.reg.pos ?? -9) - (a.reg.pos ?? -9));
   // その機種が無い店も名前だけ下に出す。出さないと「店ごと載っていない」と誤解される
   // （ロイヤルにはマイジャグVが無く、既定のタブで店が消えて見えた。2026-09-25）
   const missing = index.shops.filter((s) => !rows.some((r) => r.shop === s.id)).map((s) => {
@@ -302,12 +351,39 @@ async function render() {
   $("#rows").innerHTML = (rows.length
     ? rows.map((r) => rowHtml(r, cmpOf(r), extrasOf(r), showBase)).join("")
     : `<p class="empty">この条件のデータはありません</p>`) + missing;
+  bindTops();
+}
+
+function bindTops() {
   $$("details.top10").forEach((el) => {
     el.addEventListener("toggle", () => {
       if (el.open) { openTops.add(el.dataset.shop); fillTop(el); } else openTops.delete(el.dataset.shop);
     });
   });
   refreshTops();
+}
+
+function renderGrid(rows, keys, cmpOf, extrasOf, showBase) {
+  let card = "";
+  if (state.pick) {
+    const { shop, machine } = state.pick;
+    const r = rows.find((x) => x.shop === shop && x.machine === machine);
+    const s = index.shops.find((x) => x.id === shop);
+    card = `<div id="pickCard"><p class="pickhead">${machineName(machine)}</p>`
+      + (r ? rowHtml(r, cmpOf(r), extrasOf(r), showBase)
+           : `<article class="shop absent"><header><b>${s ? s.name : shop}</b></header><p>この期間のデータはありません</p></article>`)
+      + `<button class="allshops" data-k="${machine}">この機種を全店で見る ›</button></div>`;
+  }
+  $("#rows").innerHTML = gridHtml(rows, keys) + card;
+  $$("#gridMetric button").forEach((b) => (b.onclick = () => { state.gridMetric = b.dataset.gm; render(); }));
+  $$("table.grid td.cell").forEach((td) => (td.onclick = () => {
+    const same = state.pick && state.pick.shop === td.dataset.shop && state.pick.machine === td.dataset.k;
+    state.pick = same ? null : { shop: td.dataset.shop, machine: td.dataset.k };
+    render().then(() => { const c = $("#pickCard"); if (c) c.scrollIntoView({ block: "nearest", behavior: "smooth" }); });
+  }));
+  const all = $("button.allshops");
+  if (all) all.onclick = () => { state.view = "machine"; state.machine = all.dataset.k; render(); };
+  bindTops();
 }
 
 init();

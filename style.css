@@ -74,3 +74,17 @@ details .cnt th:first-child,details .cnt td:first-child{padding-left:0}
 .ovl td{padding:0 10px 0 0;white-space:nowrap}.ovl .k{color:var(--c);font-weight:600}
 .foot{font-size:12px;color:var(--sub);margin-top:16px}
 .empty{color:var(--sub);text-align:center;padding:24px 0}
+/* 店×機種の一覧（2026-10-08） */
+.grid{width:100%;border-collapse:collapse;table-layout:fixed;background:var(--card);font-variant-numeric:tabular-nums;margin-top:4px}
+.grid th,.grid td{border:1px solid var(--line);text-align:center;padding:7px 1px;font-size:13px}
+.grid th{font-weight:400;font-size:10px;line-height:1.25;color:var(--sub);word-break:break-all}
+.grid th.sh{width:68px;text-align:left;padding-left:5px;font-size:12px;color:var(--fg);font-weight:600}
+.grid th.sh em{font-style:normal;color:#b8860b;margin-left:2px}
+.grid td.cell{cursor:pointer;font-weight:600}
+.grid td.nodata{color:#aaa;font-weight:400}
+.grid td.na{color:#ccc;background:#faf9f6}
+.grid td.pick{outline:3px solid var(--on);outline-offset:-3px}
+.grid tr.absent th{opacity:.5}
+.gridnote{font-size:11px;color:var(--sub);margin:6px 0}
+.pickhead{margin:12px 0 -4px;font-size:13px;font-weight:600}
+.allshops{display:block;width:100%;margin:4px 0 8px;padding:8px;border:1px solid var(--line);background:var(--card);border-radius:8px;font-size:13px;color:var(--fg)}
