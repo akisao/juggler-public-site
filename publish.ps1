@@ -12,4 +12,5 @@ $changed = git -C $site status --porcelain
 if (-not $changed) { Write-Host "変更なし（公開済みの状態と同じ）"; exit 0 }
 git -C $site commit -q -m ("データ更新 " + (Get-Date -Format "yyyy-MM-dd HH:mm"))
 git -C $site push
+if ($LASTEXITCODE -ne 0) { Write-Host "push に失敗しました。公開されていません（認証で止まったら、アキラさんのターミナルで git -C $site push を1回）"; exit 1 }
 Write-Host "公開しました。数分で反映されます"
