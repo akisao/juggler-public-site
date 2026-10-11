@@ -2,6 +2,10 @@
 <html lang="ja">
 <head>
 <meta charset="utf-8">
+<!-- CSP: このサイト自身のファイル以外は読み込ませず、ページに直接書いたスクリプト・見た目の指定も動かさない。
+     知らない人にも公開するので、万一どこかに穴があっても見る人の端末で外の命令が動かないように（2026-10-11 アキラさん）。
+     ほかの <meta>・<link> より前に置く（後ろに置くと、それより前に読んだものには効かない）。index.html と同じ内容にそろえる -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; connect-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <!-- ホーム画面・デスクトップに「アプリ」として置けるように（2026-09-27 アキラさんの要望）。
      アイコンを描き直したら ?v= も変える。同じURLだと iPhone が古い絵を使い続けた（2026-09-27） -->
@@ -12,17 +16,11 @@
 <meta name="apple-mobile-web-app-title" content="ペカジャグ">
 <meta name="theme-color" content="#2b2b2b">
 <title>数字の出し方 — ペカジャグ観測所</title>
-<link rel="stylesheet" href="style.css?v=20261008a">
-<style>
-main h2{font-size:17px;margin:22px 0 6px;padding-top:8px;border-top:1px solid var(--line)}
-main p,main li{font-size:14px}
-main table{border-collapse:collapse;font-size:13px}
-main td,main th{border:1px solid var(--line);padding:4px 8px;text-align:left}
-</style>
+<link rel="stylesheet" href="style.css?v=20261011a">
 </head>
 <body>
 <header class="top"><h1>数字の出し方</h1><p class="lead"><a href="index.html">← ペカジャグ観測所に戻る</a></p></header>
-<main>
+<main class="notes">
 <h2 id="source">1. データの出どころ</h2>
 <p>各ホールが公開している台データを人が自分のブラウザで閲覧し、<b>店×機種×日の合計</b>（回転数・BIG回数・REG回数）だけを記録しています。台ごとの数値と台番号は、<a href="#top10">台ごとトップ10</a>に載る上位の台だけです。元の表や画像は載せていません。取得は自動ではなく、閉店後に1日1回、人の手で行っています。</p>
 

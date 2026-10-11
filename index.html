@@ -2,6 +2,11 @@
 <html lang="ja">
 <head>
 <meta charset="utf-8">
+<!-- CSP: このサイト自身のファイル以外は読み込ませず、ページに直接書いたスクリプト・見た目の指定も動かさない。
+     知らない人にも公開するので、万一どこかに穴があっても見る人の端末で外の命令が動かないように（2026-10-11 アキラさん）。
+     ほかの <meta>・<link> より前に置く（後ろに置くと、それより前に読んだものには効かない）。notes.html と同じ内容にそろえる。
+     style 属性も止まるので、app.js は色を HTML に書かず要素に直接付けている（paintCell） -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; connect-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <!-- ホーム画面・デスクトップに「アプリ」として置けるように（2026-09-27 アキラさんの要望）。
      アイコンを描き直したら ?v= も変える。同じURLだと iPhone が古い絵を使い続けた（2026-09-27） -->
@@ -14,7 +19,7 @@
 <title>ペカジャグ観測所</title>
 <meta name="description" content="苫小牧のホールのジャグラーについて、REG・合算の実測がメーカー公表値の設定1〜6のどこに位置するかを店ごとに並べています。">
 <!-- ?v= は画面のファイルを変えたら書き換える。スマホが古い app.js を使い続けないように（2026-09-25） -->
-<link rel="stylesheet" href="style.css?v=20261008a">
+<link rel="stylesheet" href="style.css?v=20261011a">
 </head>
 <body>
 <button id="sticky" class="sticky" hidden aria-label="表示中の条件（タップで上へ）"><span id="stickyText"></span></button>
@@ -52,6 +57,6 @@
   <section id="rows"></section>
   <p class="foot">最終更新 <span id="updated"></span> ／ 台ごとの数値は「台ごとトップ10」だけ。<a href="notes.html">注記</a></p>
 </main>
-<script src="app.js?v=20261008a"></script>
+<script src="app.js?v=20261011a"></script>
 </body>
 </html>

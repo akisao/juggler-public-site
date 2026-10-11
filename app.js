@@ -18,6 +18,11 @@ const cache = new Map();
 const $ = (s) => document.querySelector(s);
 const $$ = (s) => Array.from(document.querySelectorAll(s));
 const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
+// JSON の文字を HTML に組み込む前に必ず通す。今のデータはこちらで決めた店名・機種名と数字だけだが、
+// 知らない人にも公開するので、将来どこかから想定外の文字が混ざっても、見る人の端末で
+// タグや命令として働かないようにしておく（2026-10-11 アキラさん）
+const ESC = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" };
+const esc = (v) => String(v ?? "").replace(/[&<>"']/g, (c) => ESC[c]);
 
 function loadJson(path) {
   // no-cache は「毎回サーバーに更新を確かめ、同じなら手元の分を使う」。確かめずに古い JSON を使うと、
@@ -55,7 +60,7 @@ async function init() {
 function stickyHtml() {
   const when = state.period === "day" ? fmtDate(index.dates[state.dayIdx])
     : state.period === "month" ? `${+index.months[state.monthIdx].slice(5)}月` : "累計";
-  const parts = [when, state.view === "grid" ? "一覧" : state.machine ? machineName(state.machine) : "—"];
+  const parts = [esc(when), state.view === "grid" ? "一覧" : state.machine ? esc(machineName(state.machine)) : "—"];
   if (state.period !== "day") {
     const on = (state.showAll ? [["all", "全日"]] : []).concat(SPLITS.filter(([k]) => state.overlays.has(k)));
     parts.push(on.length ? on.map(([k, label]) => `<span class="c-${k}">${label}</span>`).join("・") : "点なし");
@@ -76,7 +81,7 @@ function fmtDate(iso) {
   return `${d.getMonth() + 1}月${d.getDate()}日（${WD[d.getDay()]}${hol}）`;
 }
 const md = (iso) => `${+iso.slice(5, 7)}/${+iso.slice(8, 10)}`;
-const fmtInt = (n) => (n == null ? "—" : n.toLocaleString("ja-JP"));
+const fmtInt = (n) => (n == null ? "—" : esc(n.toLocaleString("ja-JP")));
 const fmtRate = (n) => (n == null ? "—" : `1/${Math.round(n)}`);
 const fmtCi = (ci) => (ci[0] == null ? "—" : `1/${Math.round(ci[0])}〜${ci[1] == null ? "∞" : "1/" + Math.round(ci[1])}`);
 
@@ -164,7 +169,7 @@ function overlayHtml(extras) {
   if (!extras.length) return "";
   return `<table class="ovl">${extras.map((e) => `<tr>
     <td class="k c-${e.key}">${e.label}</td>
-    <td>${e.row ? e.row.days + "日" : ""}</td>
+    <td>${e.row ? esc(e.row.days) + "日" : ""}</td>
     <td>REG ${e.row ? fmtRate(e.row.reg.rate) : "—"}</td>
     <td>合算 ${e.row ? fmtRate(e.row.combined.rate) : "—"}</td></tr>`).join("")}</table>`;
 }
@@ -176,10 +181,10 @@ const fmtSetting = (pt) => (pt && pt.pos != null ? pt.pos.toFixed(1) : "—");
 function rowHtml(r, cmp, extras = [], showBase = true) {
   const shop = index.shops.find((s) => s.id === r.shop);
   const star = r.special ? "<em>★特定日</em>" : "";
-  const days = r.days > 1 ? `<span>${r.days}日</span>` : "";
-  const totalsNote = r.from_totals_days ? `<tr><td>機種合算のみの日</td><td>${r.from_totals_days}日</td></tr>` : "";
+  const days = r.days > 1 ? `<span>${esc(r.days)}日</span>` : "";
+  const totalsNote = r.from_totals_days ? `<tr><td>機種合算のみの日</td><td>${esc(r.from_totals_days)}日</td></tr>` : "";
   return `<article class="shop">
-  <header><b>${shop ? shop.name : r.shop}</b><span>${r.units > 0 ? r.units + "台" : "台数不明"}</span>${days}${star}</header>
+  <header><b>${esc(shop ? shop.name : r.shop)}</b><span>${r.units > 0 ? esc(r.units) + "台" : "台数不明"}</span>${days}${star}</header>
   <div class="line"><span class="lbl">REG</span>${scaleSvg(r.reg, cmp && cmp.reg,
     extras.map((e) => ({ key: e.key, pt: e.row && e.row.reg })), showBase)}<span class="val">${showBase ? fmtRate(r.reg.rate) : ""}</span></div>
   <div class="line"><span class="lbl">合算</span>${scaleSvg(r.combined, cmp && cmp.combined,
@@ -196,7 +201,7 @@ function rowHtml(r, cmp, extras = [], showBase = true) {
     <tr><td>推定設定 <a class="q" href="notes.html#mean">?</a></td><td>合算 ${fmtSetting(r.combined)}　REG ${fmtSetting(r.reg)}　BIG ${fmtSetting(r.big)}</td></tr>
     ${totalsNote}
   </table></details>
-  <details class="top10" data-shop="${r.shop}"${openTops.has(r.shop) ? " open" : ""}>
+  <details class="top10" data-shop="${esc(r.shop)}"${openTops.has(r.shop) ? " open" : ""}>
     <summary>台ごとトップ10</summary><div class="topbody"></div></details>
 </article>`;
 }
@@ -207,18 +212,21 @@ const SHORT_MACHINE = { my_juggler_v: "マイV", my_juggler_vi: "マイⅥ", neo
   gogo_juggler_3: "ゴーゴー3", happy_juggler_v3: "ハッピーV3", funky_juggler_2: "ファンキー2",
   juggler_girls_ss: "ガールズSS" };
 const shortShop = (name) => name.replace(/(苫小牧駅前店|苫小牧店|沼ノ端店|店)$/, "");
-// 色の濃さは目盛りの位置そのまま（1 で薄く 6 で濃く）。順位や平均からの差にはしない
-function cellStyle(pos) {
+// 色の濃さは目盛りの位置そのまま（1 で薄く 6 で濃く）。順位や平均からの差にはしない。
+// HTML の style 属性で付けると、index.html の CSP（style.css 以外の見た目の指定を止める）に止められるので、
+// 表を組み立てたあとで要素に直接付ける
+function paintCell(td, pos) {
   const t = clamp((pos - 1) / 5, 0, 1);
-  return `background:rgba(211,69,43,${(0.06 + 0.8 * t).toFixed(2)});${t > 0.55 ? "color:#fff;" : ""}`;
+  td.style.background = `rgba(211,69,43,${(0.06 + 0.8 * t).toFixed(2)})`;
+  if (t > 0.55) td.style.color = "#fff";
 }
-const fmtCell = (pos) => (pos < 1 ? "&lt;1" : pos.toFixed(1));
+const fmtCell = (pos) => (pos < 1 ? "<1" : pos.toFixed(1));
 
 function gridHtml(rows, keys) {
   const metric = state.gridMetric;
   const seg = `<nav class="seg small" id="gridMetric">${[["reg", "REG"], ["combined", "合算"]].map(([v, label]) =>
     `<button data-gm="${v}" class="${metric === v ? "on" : ""}">${label}</button>`).join("")}</nav>`;
-  const head = `<tr><th class="sh"></th>${keys.map((k) => `<th>${SHORT_MACHINE[k] || machineName(k)}</th>`).join("")}</tr>`;
+  const head = `<tr><th class="sh"></th>${keys.map((k) => `<th>${esc(SHORT_MACHINE[k] || machineName(k))}</th>`).join("")}</tr>`;
   const body = index.shops.map((s) => {
     const mine = rows.filter((r) => r.shop === s.id);
     const star = mine.some((r) => r.special) ? "<em>★</em>" : "";
@@ -227,10 +235,10 @@ function gridHtml(rows, keys) {
       if (!r) return `<td class="na">−</td>`;
       const pos = r[metric].pos;
       const on = state.pick && state.pick.shop === s.id && state.pick.machine === k ? " pick" : "";
-      if (pos == null) return `<td class="cell nodata${on}" data-shop="${s.id}" data-k="${k}">…</td>`;
-      return `<td class="cell${on}" data-shop="${s.id}" data-k="${k}" style="${cellStyle(pos)}">${fmtCell(pos)}</td>`;
+      if (pos == null) return `<td class="cell nodata${on}" data-shop="${esc(s.id)}" data-k="${esc(k)}">…</td>`;
+      return `<td class="cell${on}" data-shop="${esc(s.id)}" data-k="${esc(k)}" data-pos="${esc(pos)}">${esc(fmtCell(pos))}</td>`;
     }).join("");
-    return `<tr${mine.length ? "" : ' class="absent"'}><th class="sh">${shortShop(s.name)}${star}</th>${cells}</tr>`;
+    return `<tr${mine.length ? "" : ' class="absent"'}><th class="sh">${esc(shortShop(s.name))}${star}</th>${cells}</tr>`;
   }).join("");
   const note = state.period === "day" ? "" : "表は全日の数字。特定日・曜日のボタンは、開いたカードにだけ重なります。";
   return `${seg}<table class="grid">${head}${body}</table>
@@ -253,7 +261,7 @@ function topRowsHtml(list, withMachine) {
   if (!list.length) return `<p class="empty">条件に合う台がありません</p>`;
   return `<table class="toptable">${list.map((t, i) => `<tr>
     <td class="rk">${i + 1}位</td>
-    <td class="no">${t.no}${withMachine ? `<small>${machineName(t.machine)}</small>` : ""}</td>
+    <td class="no">${esc(t.no)}${withMachine ? `<small>${esc(machineName(t.machine))}</small>` : ""}</td>
     <td class="rt">${fmtRate(t.rate)}${fmtPos(t.pos)}</td>
     <td class="gm">${fmtInt(t.games)}G</td>
     <td class="br">BB ${fmtInt(t.big)} / RB ${fmtInt(t.reg)}</td></tr>`).join("")}</table>`;
@@ -277,14 +285,14 @@ async function fillTop(el) {
   const metricSeg = `<nav class="seg small">${[["big", "BIG"], ["reg", "REG"], ["combined", "合算"]].map(([v, label]) =>
     `<button data-metric="${v}" class="${state.topMetric === v ? "on" : ""}">${label}</button>`).join("")}</nav>`;
   const scopeTabs = `<nav class="pills">${keys.concat(["all"]).map((k) =>
-    `<button data-scope="${k}" class="${scope === k ? "on" : ""}">${k === "all" ? "店全体" : machineName(k)}</button>`).join("")}</nav>`;
+    `<button data-scope="${esc(k)}" class="${scope === k ? "on" : ""}">${k === "all" ? "店全体" : esc(machineName(k))}</button>`).join("")}</nav>`;
   const cond = !doc ? "" : state.period === "day"
-    ? `${doc.min_games.toLocaleString()}回転以上の台から`
-    : `1日平均${doc.min_games_per_day.toLocaleString()}回転以上の台から`;
+    ? `${esc(doc.min_games.toLocaleString())}回転以上の台から`
+    : `1日平均${esc(doc.min_games_per_day.toLocaleString())}回転以上の台から`;
   body.innerHTML = metricSeg + scopeTabs
     + (scoped ? topRowsHtml(scoped[state.topMetric], scope === "all")
               : `<p class="empty">この条件のデータはありません</p>`)
-    + `<p class="cond">${cond}（対象 ${scoped ? scoped.eligible : 0}台）<a class="q" href="notes.html#top10">?</a></p>`;
+    + `<p class="cond">${cond}（対象 ${esc(scoped ? scoped.eligible : 0)}台）<a class="q" href="notes.html#top10">?</a></p>`;
   body.querySelectorAll("button[data-metric]").forEach((b) => (b.onclick = () => {
     state.topMetric = b.dataset.metric; refreshTops(); }));
   body.querySelectorAll("button[data-scope]").forEach((b) => (b.onclick = () => {
@@ -318,7 +326,7 @@ async function render() {
   const grid = state.view === "grid";
   $("#machines").innerHTML = `<button data-k="" class="${grid ? "on" : ""}">一覧</button>` + keys.map((k) => {
     const m = index.machines.find((x) => x.key === k);
-    return `<button data-k="${k}" class="${!grid && k === state.machine ? "on" : ""}">${m.name}</button>`;
+    return `<button data-k="${esc(k)}" class="${!grid && k === state.machine ? "on" : ""}">${esc(m.name)}</button>`;
   }).join("");
   $$("#machines button").forEach((b) => (b.onclick = () => {
     if (b.dataset.k) { state.view = "machine"; state.machine = b.dataset.k; } else state.view = "grid";
@@ -345,7 +353,7 @@ async function render() {
   // （ロイヤルにはマイジャグVが無く、既定のタブで店が消えて見えた。2026-09-25）
   const missing = index.shops.filter((s) => !rows.some((r) => r.shop === s.id)).map((s) => {
     const other = cur.rows.some((r) => r.shop === s.id);
-    return `<article class="shop absent"><header><b>${s.name}</b></header>
+    return `<article class="shop absent"><header><b>${esc(s.name)}</b></header>
   <p>${other ? "この機種は置いていません" : "この期間のデータはありません"}</p></article>`;
   }).join("");
   $("#rows").innerHTML = (rows.length
@@ -369,12 +377,13 @@ function renderGrid(rows, keys, cmpOf, extrasOf, showBase) {
     const { shop, machine } = state.pick;
     const r = rows.find((x) => x.shop === shop && x.machine === machine);
     const s = index.shops.find((x) => x.id === shop);
-    card = `<div id="pickCard"><p class="pickhead">${machineName(machine)}</p>`
+    card = `<div id="pickCard"><p class="pickhead">${esc(machineName(machine))}</p>`
       + (r ? rowHtml(r, cmpOf(r), extrasOf(r), showBase)
-           : `<article class="shop absent"><header><b>${s ? s.name : shop}</b></header><p>この期間のデータはありません</p></article>`)
-      + `<button class="allshops" data-k="${machine}">この機種を全店で見る ›</button></div>`;
+           : `<article class="shop absent"><header><b>${esc(s ? s.name : shop)}</b></header><p>この期間のデータはありません</p></article>`)
+      + `<button class="allshops" data-k="${esc(machine)}">この機種を全店で見る ›</button></div>`;
   }
   $("#rows").innerHTML = gridHtml(rows, keys) + card;
+  $$("table.grid td.cell[data-pos]").forEach((td) => paintCell(td, Number(td.dataset.pos)));
   $$("#gridMetric button").forEach((b) => (b.onclick = () => { state.gridMetric = b.dataset.gm; render(); }));
   $$("table.grid td.cell").forEach((td) => (td.onclick = () => {
     const same = state.pick && state.pick.shop === td.dataset.shop && state.pick.machine === td.dataset.k;

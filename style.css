@@ -88,3 +88,9 @@ details .cnt th:first-child,details .cnt td:first-child{padding-left:0}
 .gridnote{font-size:11px;color:var(--sub);margin:6px 0}
 .pickhead{margin:12px 0 -4px;font-size:13px;font-weight:600}
 .allshops{display:block;width:100%;margin:4px 0 8px;padding:8px;border:1px solid var(--line);background:var(--card);border-radius:8px;font-size:13px;color:var(--fg)}
+/* 注記ページだけの見た目。ページの中の <style> は CSP で止めるのでここに置く（2026-10-11）。
+   :where で包むのは、元の「main h2」などと同じ強さのままにして、ほかの指定との勝ち負けを変えないため */
+main:where(.notes) h2{font-size:17px;margin:22px 0 6px;padding-top:8px;border-top:1px solid var(--line)}
+main:where(.notes) p,main:where(.notes) li{font-size:14px}
+main:where(.notes) table{border-collapse:collapse;font-size:13px}
+main:where(.notes) td,main:where(.notes) th{border:1px solid var(--line);padding:4px 8px;text-align:left}
