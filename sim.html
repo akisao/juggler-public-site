@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<!-- CSP は index.html と同じ内容にそろえる（2026-10-11 アキラさん）。ほかの <meta>・<link> より前に置く -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; connect-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="icons/favicon.ico?v=20260927peka">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png?v=20260927peka">
+<meta name="theme-color" content="#2b2b2b">
+<title>ペカジャグ観測所 期待収支</title>
+<meta name="description" content="閉店後の確定データから、店×機種ごとに打ち方と打つ時間で期待収支を出します。">
+<link rel="stylesheet" href="style.css?v=20261011a">
+<link rel="stylesheet" href="sim.css?v=20261013a">
+</head>
+<body>
+<header class="top">
+  <h1>ペカジャグ観測所 <small>期待収支</small></h1>
+  <p class="lead">その日の閉店後の数字で「このくらい打っていたら、平均するといくらだったか」を出します。<a href="index.html">観測所にもどる</a></p>
+</header>
+<main>
+  <div class="datenav">
+    <button id="prev" aria-label="前の日">◀</button>
+    <span id="range"></span>
+    <button id="next" aria-label="次の日">▶</button>
+  </div>
+  <section class="simctl" id="controls" hidden>
+    <div class="chips"><span class="chips" id="styles"></span><button type="button" id="sound" class="sound"></button></div>
+    <p class="time"><b id="time-text"></b><span id="games-text"></span></p>
+    <input type="range" id="time" min="1" step="1" aria-label="打つ時間（10分刻み）">
+    <div class="ticks" aria-hidden="true"><span>10分</span><span>4時間</span><span>8時間</span><span>13時間45分</span></div>
+  </section>
+  <section id="rows"></section>
+  <div class="notes">
+    <p>その日の店×機種の全台を合わせた合算確率を、観測所と同じくメーカー公表値の設定1〜6の目盛りに置いた位置（画面と同じ小数第1位）を、割数の表で設定と設定の間を按分して機械割にしています。例えば 3.8 なら設定3と設定4の割数を 2:8 で混ぜます。1未満は設定1、6を超える値は設定6の割数で止めます。</p>
+    <p>期待収支 ＝ 打つ時間 × 1時間 750G × 3枚 ×（機械割 − 100%）。円は等価（1枚 20円）で直しています。非等価のお店は差枚で見てください。</p>
+    <p><b>チェリー狙い</b>：通常時はチェリーを狙い、ボーナス成立後は1枚掛けでぶどうを抜き、先ペカ時はチェリーを抜く打ち方。<b>適当打ち</b>：通常時に何も狙わない打ち方（メーカー公表の機械割）。</p>
+    <p>チェリー狙いの割数はガリぞう氏の独自調査・推計値です。実機とは誤差が出ることがあります。</p>
+    <p id="notes"></p>
+    <p>期待収支は「平均するとこのくらい」という目安です。実際の収支は、これより大きく上下します。店×機種の全台を合わせた数字なので、どの台に座ったかで変わります。</p>
+  </div>
+</main>
+<script src="sim.js?v=20261013a"></script>
+</body>
+</html>
