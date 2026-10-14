@@ -19,13 +19,19 @@
 <title>ペカジャグ観測所</title>
 <meta name="description" content="苫小牧のホールのジャグラーについて、REG・合算の実測がメーカー公表値の設定1〜6のどこに位置するかを店ごとに並べています。">
 <!-- ?v= は画面のファイルを変えたら書き換える。スマホが古い app.js を使い続けないように（2026-09-25） -->
-<link rel="stylesheet" href="style.css?v=20261011a">
+<link rel="stylesheet" href="style.css?v=20261014a">
 </head>
 <body>
 <button id="sticky" class="sticky" hidden aria-label="表示中の条件（タップで上へ）"><span id="stickyText"></span></button>
 <header class="top">
   <h1>ペカジャグ観測所 <small>苫小牧</small></h1>
-  <p class="lead">実測を公表値の目盛りに置いただけ。右にあるほど設定を使っている可能性が高い。<a href="notes.html">数字の出し方</a>・<a href="sim.html">期待収支</a></p>
+  <p class="lead">実測を公表値の目盛りに置いただけ。右にあるほど設定を使っている可能性が高い。<a href="notes.html">数字の出し方</a></p>
+  <!-- 説明文の中の小さなリンクでは気づかれなかった（10/14 アキラさん「わかりづらい」）。タイトルのすぐ下に大きく置く -->
+  <a class="simlink" href="sim.html">
+    <span class="simlink-ic" aria-hidden="true">¥</span>
+    <span class="simlink-tx"><b>期待収支シミュレーター</b><small>この台を打っていたら、平均でいくらだったか</small></span>
+    <span class="simlink-go" aria-hidden="true">›</span>
+  </a>
 </header>
 <main id="app">
   <nav class="seg" id="period" aria-label="期間">

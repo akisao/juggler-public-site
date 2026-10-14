@@ -94,3 +94,11 @@ main:where(.notes) h2{font-size:17px;margin:22px 0 6px;padding-top:8px;border-to
 main:where(.notes) p,main:where(.notes) li{font-size:14px}
 main:where(.notes) table{border-collapse:collapse;font-size:13px}
 main:where(.notes) td,main:where(.notes) th{border:1px solid var(--line);padding:4px 8px;text-align:left}
+/* 期待収支への入口（2026-10-14 アキラさん「わかりづらい」）。押せる物だと一目で分かるよう、横いっぱいのカードにする */
+.simlink{display:flex;align-items:center;gap:12px;margin:10px 0 2px;padding:12px 14px;border-radius:12px;background:var(--on);color:#fff;text-decoration:none;box-shadow:0 2px 6px rgba(0,0,0,.15)}
+.simlink:active{transform:translateY(1px);box-shadow:0 1px 3px rgba(0,0,0,.15)}
+.simlink-ic{flex:none;width:36px;height:36px;border-radius:50%;background:#e8b54a;color:#2b2b2b;font-weight:700;font-size:19px;line-height:36px;text-align:center}
+.simlink-tx{flex:1;min-width:0;display:flex;flex-direction:column}
+.simlink-tx b{font-size:16px}
+.simlink-tx small{font-size:12px;opacity:.8}
+.simlink-go{flex:none;font-size:26px;line-height:1;opacity:.7}
