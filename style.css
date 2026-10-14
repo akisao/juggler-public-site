@@ -102,3 +102,13 @@ main:where(.notes) td,main:where(.notes) th{border:1px solid var(--line);padding
 .simlink-tx b{font-size:16px}
 .simlink-tx small{font-size:12px;opacity:.8}
 .simlink-go{flex:none;font-size:26px;line-height:1;opacity:.7}
+/* AIで分析する（ai.html）。説明書は長いので枠の中で折り返し、スマホでも横にはみ出さないように */
+.dl{display:inline-block;padding:10px 14px;border-radius:10px;background:var(--on);color:#fff;text-decoration:none;font-weight:700}
+.copy{padding:8px 12px;border-radius:8px;border:1px solid var(--on);background:var(--card);color:var(--fg);font-size:14px}
+.guide{white-space:pre-wrap;word-break:break-word;max-height:320px;overflow:auto;padding:10px;border:1px solid var(--line);border-radius:8px;background:var(--card);font-size:12px;line-height:1.5}
+.asks li{cursor:pointer;margin:6px 0;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--card);list-style:none}
+.asks{padding-left:0}
+.asks li.copied{border-color:var(--on);background:#efe9d8}
+.sub{font-size:12px;color:var(--sub)}
+.simlink.ailink{margin-top:8px;background:#3b5b8c}
+.simlink.ailink .simlink-ic{background:#cfe0ff;font-size:15px}

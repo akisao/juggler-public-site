@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<!-- CSP は index.html と同じ内容にそろえる（2026-10-11 アキラさん）。ほかの <meta>・<link> より前に置く -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; connect-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="icons/favicon.ico?v=20260927peka">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png?v=20260927peka">
+<meta name="theme-color" content="#2b2b2b">
+<title>AIで分析する — ペカジャグ観測所</title>
+<meta name="description" content="観測所の日ごとの数字を1枚の表にしました。自分のAIに渡して、好きな切り口で分析できます。">
+<link rel="stylesheet" href="style.css?v=20261015a">
+</head>
+<body>
+<header class="top"><h1>AIで分析する</h1><p class="lead"><a href="index.html">← ペカジャグ観測所に戻る</a></p></header>
+<main class="notes">
+<p>観測所の日ごとの数字を、1枚の表（CSV）にまとめました。ChatGPT・Claude・Gemini など、<b>ファイルを渡せるAI</b>なら、どれでも分析に使えます。表は毎晩、観測所と一緒に新しくなります。</p>
+
+<h2>1. 表をダウンロードする</h2>
+<p><a class="dl" href="data/ai/juggler-daily.csv" download="juggler-daily.csv">表をダウンロード（juggler-daily.csv）</a></p>
+<p class="sub" id="meta"></p>
+
+<h2>2. AIに表と説明書を渡す</h2>
+<p>AIとの会話に、ダウンロードした表を添付します。そのとき、下の説明書も一緒に貼り付けてください。説明書が無いと、AIが数字の意味を取り違えることがあります。</p>
+<p><button type="button" class="copy" data-target="guide">説明書をコピー</button></p>
+<pre class="guide" id="guide">読み込み中…</pre>
+
+<h2>3. 聞いてみる</h2>
+<p>たとえば、こんな聞き方ができます。タップでコピーできます。</p>
+<ul class="asks" id="asks">
+<li>特定日と特定日以外で、合算目盛りがいちばん上がる店と機種はどれ？ 複数日は総回転数と回数を足してから計算して比べて</li>
+<li>曜日ごとに、店ごとの合算目盛りを表にして。回転数の少ない組はブレが大きいので印を付けて</li>
+<li>直近14日と、それより前とで比べて、調子が上がっている店×機種を探して。95%の幅も考えて、たまたまかどうかも教えて</li>
+<li>土日に強い店と、平日に強い店の違いはある？ 根拠になる数字も出して</li>
+</ul>
+
+<h2>注意</h2>
+<ul>
+<li>表の数字は、<b>店×機種の全台を合わせた合計</b>です。台ごとの数字・台番号は入っていません</li>
+<li>目盛り（推定設定の目安）は設定そのものではありません。回数が少ない日ほど、たまたまで大きく動きます。数字の出し方は<a href="notes.html">数字の出し方</a>と同じです</li>
+<li>AIの答えは外れることがあります。計算をまちがえることもあるので、気になる答えは観測所の画面とも見比べてください</li>
+<li>取り込めなかった日・機種は表にありません（行が無い＝0ではありません）</li>
+</ul>
+</main>
+<script src="ai.js?v=20261015a"></script>
+</body>
+</html>
