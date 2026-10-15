@@ -6,7 +6,8 @@ const YEN_PER_COIN = 20; // 等価
 // つまみは10分刻み。端だけは 9:00 開店〜22:45 閉店の通し打ち（13時間45分）にそろえる
 const STEP_MIN = 10, MAX_MIN = 13 * 60 + 45;
 const LAST_STEP = Math.ceil(MAX_MIN / STEP_MIN);
-const DEFAULT_STEP = 12; // 2時間
+// 19時から閉店までの約3時間半を、つまみを動かさずに見られるように（2026-10-16 アキラさん）
+const DEFAULT_STEP = 21; // 3時間30分
 const WEEKDAY = "日月火水木金土";
 
 const state = { index: null, dayIdx: 0, doc: null, style: null, step: DEFAULT_STEP, sound: true };
